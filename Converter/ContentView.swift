@@ -8,49 +8,27 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var input = 10.0
-    @State private var inputUnit = "meters"
-    @State private var outputUnit = "meters"
+    @State private var input = 0.0
+    @State private var selectedUnits = 0
+    @State private var inputUnit: Dimension = UnitLength.kilometers
+    @State private var outputUnit: Dimension = UnitLength.meters
     @FocusState private var inputIsFocused: Bool
     
-    let units = ["meters", "kilometers", "feet", "yards", "miles"]
-
+    let conversions = ["Distance", "Mass", "Temperature", "Time"]
+    
+    let unitTypes = [
+        [UnitLength.kilometers, UnitLength.meters, UnitLength.feet, UnitLength.yards, UnitLength.miles],
+        [UnitMass.grams, UnitMass.kilograms, UnitMass.ounces, UnitMass.pounds],
+        [UnitTemperature.celsius, UnitTemperature.fahrenheit, UnitTemperature.kelvin],
+        [UnitDuration.hours, UnitDuration.minutes, UnitDuration.seconds]
+    ]
+        
+    let formatter: MeasurementFormatter
+    
     private var result: String {
-        let inputToMetersMultiplier: Double
-        let metersToOutputeMultiplier: Double
-        
-        switch inputUnit {
-        case "kilometers":
-            inputToMetersMultiplier = 1000.0
-        case "feet":
-            inputToMetersMultiplier = 0.3048
-        case "yards":
-            inputToMetersMultiplier = 0.9144
-        case "miles":
-            inputToMetersMultiplier = 1609.34
-        default:
-            inputToMetersMultiplier = 1.0
-        }
-        
-        switch outputUnit {
-        case "kilometers":
-            metersToOutputeMultiplier = 0.001
-        case "feet":
-            metersToOutputeMultiplier = 3.28084
-        case "yards":
-            metersToOutputeMultiplier = 1.09361
-        case "miles":
-            metersToOutputeMultiplier = 0.000621371
-        default:
-            metersToOutputeMultiplier  = 1.0
-        }
-        
-        let inputInMeters = input * inputToMetersMultiplier
-        let output = inputInMeters * metersToOutputeMultiplier
-        
-        let outputString  = output.formatted()
-        return "\(outputString) \(outputUnit.lowercased())"
-        
+        let inputMeasurement = Measurement(value: input, unit: inputUnit)
+        let outputMeasurement = inputMeasurement.converted(to: outputUnit)
+        return formatter.string(from: outputMeasurement)
     }
         
     var body: some View {
@@ -63,16 +41,21 @@ struct ContentView: View {
                 } header: {
                     Text("Amount to convert")
                 }
+                Picker("Conversion", selection: $selectedUnits) {
+                    ForEach(0..<conversions.count, id: \.self) {
+                        Text(conversions[$0])
+                    }
+                }
                 
                 Picker("Convert from", selection: $inputUnit) {
-                    ForEach(units, id: \.self) {
-                        Text($0)
+                    ForEach(unitTypes[selectedUnits], id: \.self) {
+                        Text(formatter.string(from: $0).capitalized)
                     }
                 }
                 
                 Picker("Convert to", selection: $outputUnit) {
-                    ForEach(units, id: \.self) {
-                        Text($0)
+                    ForEach(unitTypes[selectedUnits], id: \.self) {
+                        Text(formatter.string(from: $0).capitalized)
                     }
                 }
                 
@@ -87,12 +70,22 @@ struct ContentView: View {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     
-                    Button("Done"){
+                    Button("Done")  {
                         inputIsFocused = false
                     }
                 }
             }
+            .onChange(of: selectedUnits) { newSelection in
+                let units = unitTypes[newSelection]
+                inputUnit = units[0]
+                outputUnit = units[1]
+            }
         }
+    }
+    init() {
+        formatter = MeasurementFormatter()
+        formatter.unitOptions = .providedUnit
+        formatter.unitStyle = .long
     }
 }
 
