@@ -8,77 +8,91 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var inputNumber = 10.0
+    @State private var input = 10.0
     @State private var inputUnit = "meters"
     @State private var outputUnit = "meters"
+    @FocusState private var inputIsFocused: Bool
     
-    private var outputNumber: Double {
-        var result: Double
-        var meters: Double
-    
-        // Convertion to meters. We storage value in meters
-        switch outputUnit {
-        case "kilometers":
-            meters = inputNumber * 0.001
-        case "miles":
-            meters = inputNumber * 0.000621371
-        case "feet":
-            meters = inputNumber * 3.28084
-        case "yards":
-            meters = inputNumber * 1.0944
-        default:
-            meters = inputNumber * 1.0
-        }
+    let units = ["meters", "kilometers", "feet", "yards", "miles"]
+
+    private var result: String {
+        let inputToMetersMultiplier: Double
+        let metersToOutputeMultiplier: Double
         
         switch inputUnit {
         case "kilometers":
-            result = meters * 1000.0
-        case "miles":
-            result = meters * 1609.34
+            inputToMetersMultiplier = 1000.0
         case "feet":
-            result = meters * 0.3048
+            inputToMetersMultiplier = 0.3048
         case "yards":
-            result = meters * 0.9144
+            inputToMetersMultiplier = 0.9144
+        case "miles":
+            inputToMetersMultiplier = 1609.34
         default:
-            result = meters * 1.0
+            inputToMetersMultiplier = 1.0
         }
-        return result
+        
+        switch outputUnit {
+        case "kilometers":
+            metersToOutputeMultiplier = 0.001
+        case "feet":
+            metersToOutputeMultiplier = 3.28084
+        case "yards":
+            metersToOutputeMultiplier = 1.09361
+        case "miles":
+            metersToOutputeMultiplier = 0.000621371
+        default:
+            metersToOutputeMultiplier  = 1.0
+        }
+        
+        let inputInMeters = input * inputToMetersMultiplier
+        let output = inputInMeters * metersToOutputeMultiplier
+        
+        let outputString  = output.formatted()
+        return "\(outputString) \(outputUnit.lowercased())"
+        
     }
-    
-    let utils = ["meters", "kilometers", "feet", "yards", "miles"]
-    
+        
     var body: some View {
         NavigationView {
             Form {
                 Section {
-                    TextField("Amount", value: $inputNumber, format: .number)
+                    TextField("Amount", value: $input, format: .number)
                         .keyboardType(.decimalPad)
+                        .focused($inputIsFocused)
                 } header: {
                     Text("Amount to convert")
                 }
                 
-                Section {
-                    Picker("Convert to", selection: $inputUnit) {
-                        ForEach(utils, id: \.self) {
-                            Text($0)
-                        }
+                Picker("Convert from", selection: $inputUnit) {
+                    ForEach(units, id: \.self) {
+                        Text($0)
                     }
                 }
-                Section {
-                    Picker("Convert from", selection: $outputUnit) {
-                        ForEach(utils, id: \.self) {
-                            Text($0)
-                        }
+                
+                Picker("Convert to", selection: $outputUnit) {
+                    ForEach(units, id: \.self) {
+                        Text($0)
                     }
                 }
                 
                 Section{
-                    Text(outputNumber.formatted())
+                    Text(result)
+                } header: {
+                    Text("Result")
                 }
             }
             .navigationTitle("Converter")
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    
+                    Button("Done"){
+                        inputIsFocused = false
+                    }
+                }
+            }
         }
-       
     }
 }
 
